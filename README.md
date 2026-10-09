@@ -1,6 +1,10 @@
-# CSE431: Machine Learning — Credit Card Fraud Detection
+# CSE431: Machine Learning — Credit Card Fraud Detection & Data Preprocessing
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ShoumikBalaSomu/ML-Project/blob/main/Credit_Card_Fraud_Detection.ipynb)
+| Notebook | Focus Area | Google Colab Link |
+| :--- | :--- | :---: |
+| **`Data_Preprocessing.ipynb`** | **Dedicated Data Preprocessing Script** (Scikit-Learn 8.3 Documentation) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ShoumikBalaSomu/ML-Project/blob/main/Data_Preprocessing.ipynb) |
+| **`Credit_Card_Fraud_Detection.ipynb`** | **End-to-End ML Pipeline** (EDA, Preprocessing, Modeling & Evaluation) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ShoumikBalaSomu/ML-Project/blob/main/Credit_Card_Fraud_Detection.ipynb) |
+
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)
 ![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-1.3%2B-orange.svg)
 ![Course](https://img.shields.io/badge/Course-CSE431--ML--Machine%20Learning-blueviolet.svg)
@@ -14,7 +18,8 @@
 - **Student Name:** Shoumik Bala Somu
 - **Email:** [shoumik.bala@gmail.com](mailto:shoumik.bala@gmail.com)
 - **Repository:** [https://github.com/ShoumikBalaSomu/ML-Project](https://github.com/ShoumikBalaSomu/ML-Project)
-- **Primary Notebook:** [`Credit_Card_Fraud_Detection.ipynb`](file:///home/krishna/ML-Project/Credit_Card_Fraud_Detection.ipynb)
+- **Dedicated Preprocessing Notebook:** [`Data_Preprocessing.ipynb`](file:///home/krishna/ML-Project/Data_Preprocessing.ipynb)
+- **End-to-End Project Notebook:** [`Credit_Card_Fraud_Detection.ipynb`](file:///home/krishna/ML-Project/Credit_Card_Fraud_Detection.ipynb)
 - **Reference Video Tutorial:** [Detect Credit Card Frauds with python || Kaggle Projects 2023 || Easily Explained (YouTube)](https://www.youtube.com/watch?v=mggdxVcptxU)
 - **Core Documentation Guide:** [8.3. Preprocessing data — scikit-learn documentation](https://scikit-learn.org/stable/modules/preprocessing.html)
 
@@ -26,8 +31,10 @@
 3. [Scikit-Learn 8.3 Preprocessing Implementation](#-scikit-learn-83-preprocessing-implementation)
    - [8.3.1 Standardization and Scaling](#831-standardization-and-scaling)
    - [8.3.2 Non-linear Transformations](#832-non-linear-transformations)
+   - [8.3.3 Normalization](#833-normalization)
    - [8.3.5 Discretization & Binarization](#835-discretization--binarization)
    - [8.3.6 Missing Value Imputation](#836-missing-value-imputation)
+   - [8.3.7 Polynomial Features & 8.3.8 Custom Transformers](#837-polynomial-features--838-custom-transformers)
    - [Unified ColumnTransformer Pipeline](#unified-columntransformer-pipeline)
 4. [Handling Extreme Class Imbalance](#-handling-extreme-class-imbalance)
 5. [Model Training & Methodology](#-model-training--methodology)
@@ -43,7 +50,7 @@ Credit card fraud costs financial institutions and consumers billions of dollars
 1. **Extreme Class Imbalance:** Fraudulent transactions represent less than **0.173%** of all transactions ($492$ fraud cases out of $284,807$ total). A naive classifier that predicts all transactions as legitimate achieves $99.83\%$ accuracy while failing to detect any fraudulent events.
 2. **Disparate Feature Scales & Heavy Outliers:** The dataset features $28$ PCA components ($V1$ through $V28$) which are centered around zero, whereas the raw **`Amount`** spans from $\$0.00$ to $\$25,691.16$ with extreme skewness, and **`Time`** spans $0$ to $172,792$ seconds ($48$ hours). Without principled preprocessing, models struggle with convergence and numerical stability.
 
-In accordance with course requirements, this project thoroughly integrates the official **[Scikit-Learn 8.3 Preprocessing data](https://scikit-learn.org/stable/modules/preprocessing.html)** guide to build an end-to-end, reproducible ML pipeline following the methodology from the Kaggle reference tutorial.
+In accordance with course requirements, this repository contains a **dedicated preprocessing notebook** [`Data_Preprocessing.ipynb`](file:///home/krishna/ML-Project/Data_Preprocessing.ipynb) that thoroughly implements the official **[Scikit-Learn 8.3 Preprocessing data](https://scikit-learn.org/stable/modules/preprocessing.html)** guide.
 
 ---
 
@@ -70,10 +77,10 @@ The dataset contains transactions made by credit cards in September 2013 by Euro
 ---
 
 ## ⚙️ Scikit-Learn 8.3 Preprocessing Implementation
-Following the specific instructions to implement **8.3. Preprocessing data — scikit-learn documentation**, our pipeline systematically covers the core techniques:
+Following the specific instructions to implement **8.3. Preprocessing data — scikit-learn documentation**, our pipeline systematically covers all core subsections:
 
 ### 8.3.1 Standardization and Scaling
-Gradient-based algorithms like Logistic Regression perform poorly when features operate at wildly different scales. We evaluated three scalers:
+Gradient-based algorithms like Logistic Regression perform poorly when features operate at wildly different scales. We evaluated four scalers:
 1. **`StandardScaler`**: Centers to $\mu=0$ and scales to $\sigma=1$:
    $$z = \frac{x - \mu}{\sigma}$$
    *Limitation:* Severe outliers in `Amount` (e.g. $\$25,691$) pull $\mu$ and inflate $\sigma$, compressing the majority of normal transactions into a tiny range.
@@ -82,6 +89,7 @@ Gradient-based algorithms like Logistic Regression perform poorly when features 
    *Advantage:* Resistant to extreme transaction amounts and outliers, preserving relative distance among normal transactions.
 3. **`MinMaxScaler`**: Scales all values to $[0, 1]$:
    $$z = \frac{x - x_{min}}{x_{max} - x_{min}}$$
+4. **`MaxAbsScaler`**: Scales by the maximum absolute value into $[-1, 1]$.
 
 ### 8.3.2 Non-linear Transformations
 - **`PowerTransformer` (Yeo-Johnson)**: Stabilizes variance and maps the heavily right-skewed `Amount` distribution toward a Gaussian normal distribution.
@@ -90,12 +98,19 @@ Gradient-based algorithms like Logistic Regression perform poorly when features 
 ### Comparison of Transformations on Transaction Amount
 ![Amount Preprocessing Comparison](figures/amount_scaling_comparison.png)
 
+### 8.3.3 Normalization
+- **`Normalizer` (L2 norm)**: Rescales individual sample vectors to unit norm ($\|x\|_2 = 1$).
+
 ### 8.3.5 Discretization & Binarization
 - **`KBinsDiscretizer`**: Applied to `Time` using uniform strategy to segment continuous seconds into cyclic time buckets across the 48-hour window.
 - **`Binarizer`**: Thresholding continuous `Amount` at $\$500.00$ to create a boolean indicator for high-risk transaction volumes.
 
 ### 8.3.6 Missing Value Imputation
 - Embedded `SimpleImputer(strategy='median')` into the preprocessing pipeline to ensure the pipeline is robust against unexpected missing values in streaming production data.
+
+### 8.3.7 Polynomial Features & 8.3.8 Custom Transformers
+- **`PolynomialFeatures(degree=2)`**: Generates interaction terms between key correlated PCA features.
+- **`FunctionTransformer(np.log1p)`**: Custom callable transformation for logarithmic scaling.
 
 ### Unified `ColumnTransformer` Pipeline
 To eliminate **data leakage**, all scalers and transformers are grouped into a Scikit-Learn `ColumnTransformer`. The pipeline is strictly **fitted only on the training set (`X_train`)** and applied to transform downstream test sets:
@@ -156,35 +171,36 @@ We evaluate two complementary machine learning classifiers:
 ### ROC and Precision-Recall Curves
 ![ROC and PR Curves](figures/roc_pr_curves.png)
 
-### Real-World Validation on Full Unbalanced Dataset ($284,807$ Transactions)
-When evaluated on the entire $284,807$ transaction dataset, the preprocessed Logistic Regression model maintains:
-- **Fraud Recall:** Detected **$454$ out of $492$ fraud cases ($92.28\%$ detection rate)**.
-- **Normal Transaction Specificity:** Correctly classified over **$97\%$** of legitimate transactions.
-
 ---
 
 ## 📂 Repository Structure
 ```
 ML-Project/
-├── .gitignore                      # Prevents raw 144MB dataset from exceeding GitHub limits
-├── requirements.txt                # Python dependencies
-├── README.md                       # Comprehensive project documentation
-├── Credit_Card_Fraud_Detection.ipynb # Complete executed Jupyter notebook with Colab badge
-├── build_notebook.py               # Automated script to generate & execute notebook
-├── figures/                        # High-resolution figures and evaluation plots
+├── .gitignore                          # Excludes raw 144MB dataset; tracks preprocessed outputs
+├── requirements.txt                    # Python dependencies
+├── README.md                           # Project documentation & compliance mappings
+├── Data_Preprocessing.ipynb            # Dedicated Data Preprocessing script (Scikit-Learn 8.3)
+├── Credit_Card_Fraud_Detection.ipynb   # Complete executed end-to-end ML notebook
+├── build_preprocessing_notebook.py     # Script building Data_Preprocessing.ipynb
+├── build_notebook.py                   # Script building Credit_Card_Fraud_Detection.ipynb
+├── figures/                            # High-resolution figures and evaluation plots
 │   ├── amount_scaling_comparison.png
 │   ├── class_distribution.png
 │   ├── confusion_matrices.png
 │   ├── correlation_matrix.png
 │   ├── roc_pr_curves.png
 │   └── transaction_time_distribution.png
-├── data/                           # Sample and balanced datasets
-│   ├── creditcard_balanced.csv     # 50/50 balanced dataset (984 rows, 504 KB)
-│   └── creditcard_sample.csv       # Stratified sample (5,000 rows, 2.6 MB)
-└── src/                            # Modular Python codebase
-    ├── preprocessing.py            # Scikit-learn 8.3 preprocessing pipelines
-    ├── model.py                    # Model definitions and evaluation metrics
-    └── generate_visualizations.py  # Script generating all figure plots
+├── data/                               # Cleaned, sample, and preprocessed datasets
+│   ├── creditcard_balanced.csv         # 50/50 balanced dataset (984 rows, 504 KB)
+│   ├── creditcard_sample.csv           # Stratified sample (5,000 rows, 2.6 MB)
+│   ├── X_train_preprocessed.csv        # Preprocessed train features (455 KB)
+│   ├── X_test_preprocessed.csv         # Preprocessed test features (114 KB)
+│   ├── y_train.csv                     # Train target labels (1.6 KB)
+│   └── y_test.csv                      # Test target labels (400 B)
+└── src/                                # Modular Python codebase
+    ├── preprocessing.py                # Scikit-Learn 8.3 preprocessing pipelines
+    ├── model.py                        # Model definitions and evaluation metrics
+    └── generate_visualizations.py      # Automated script generating all figures
 ```
 
 ---
@@ -192,44 +208,20 @@ ML-Project/
 ## 🚀 How to Run
 
 ### Option 1: Run in Google Colab (One-Click)
-Click the badge below to immediately launch and run the project in Google Colab:
-
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ShoumikBalaSomu/ML-Project/blob/main/Credit_Card_Fraud_Detection.ipynb)
-
-*The notebook includes an automated dataset handler that downloads and extracts `creditcard.zip` directly from GitHub Releases if not found locally.*
+- **Data Preprocessing Script:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ShoumikBalaSomu/ML-Project/blob/main/Data_Preprocessing.ipynb)
+- **Full Fraud Detection Pipeline:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ShoumikBalaSomu/ML-Project/blob/main/Credit_Card_Fraud_Detection.ipynb)
 
 ### Option 2: Run Locally
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/ShoumikBalaSomu/ML-Project.git
-   cd ML-Project
-   ```
-
-2. **Set up a virtual environment:**
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
-
-3. **Run visualization & training pipeline:**
-   ```bash
-   python3 src/generate_visualizations.py
-   ```
-
-4. **Launch Jupyter Notebook:**
-   ```bash
-   jupyter notebook Credit_Card_Fraud_Detection.ipynb
-   ```
+```bash
+git clone https://github.com/ShoumikBalaSomu/ML-Project.git
+cd ML-Project
+pip install -r requirements.txt
+jupyter notebook Data_Preprocessing.ipynb
+```
 
 ---
 
-## 📚 Conclusion & References
-1. **Scikit-Learn 8.3 Preprocessing Impact:** Applying `RobustScaler` on `Amount` provided critical immunity against extreme transaction outliers, allowing Logistic Regression to achieve an outstanding **$0.9825$ ROC-AUC**.
-2. **Imbalance Mitigation:** Random Under-Sampling provided a well-calibrated baseline that prevented majority class collapse, matching the findings from the Kaggle reference tutorial.
-
-### References:
+## 📚 References
 - [Scikit-Learn 8.3: Preprocessing data](https://scikit-learn.org/stable/modules/preprocessing.html)
 - [Detect Credit Card Frauds with python || Kaggle Projects 2023 || Easily Explained (YouTube)](https://www.youtube.com/watch?v=mggdxVcptxU)
 - [Kaggle Credit Card Fraud Detection Dataset](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud)
